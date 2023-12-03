@@ -1,0 +1,8 @@
+# IDE
+*.iml
+**/.idea
+**/.vscode/
+
+# Scala
+**/.bsp
+**/target/*
