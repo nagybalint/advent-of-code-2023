@@ -14,12 +14,12 @@ object Day1 {
     Try(DIGITS.map(digit => in.lastIndexOf(digit)).zipWithIndex.filterNot(_._1 == -1).maxBy(_._1)).toOption
 
   def getFirstRealDigit(in: String): (Int, Int) = {
-    val (position, digit) = in.toCharArray.zipWithIndex.filter(_._1.isDigit).head.swap
+    val (position, digit) = in.toCharArray.zipWithIndex.find(_._1.isDigit).get.swap
     (position, digit.toString.toInt)
   }
 
   def getLastRealDigit(in: String): (Int, Int) = {
-    val (position, digit) = in.toCharArray.zipWithIndex.filter(_._1.isDigit).last.swap
+    val (position, digit) = in.toCharArray.zipWithIndex.findLast(_._1.isDigit).get.swap
     (position, digit.toString.toInt)
   }
 
