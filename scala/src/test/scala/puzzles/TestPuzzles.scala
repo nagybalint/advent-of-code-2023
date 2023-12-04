@@ -3,6 +3,7 @@ package puzzles
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.io.Source
+import scala.util.{Failure, Success, Using}
 
 class TestPuzzles extends AnyWordSpec {
   "Day 1, Task 1" in {
@@ -41,10 +42,24 @@ class TestPuzzles extends AnyWordSpec {
     assert(response == 76314915)
   }
 
-  private def readInput(fileName: String) = {
-    val source = Source.fromURL(getClass.getResource(fileName))
-    val dataLines = source.getLines.foldLeft(Seq.empty[String])((acc, x) => acc ++ Seq(x))
-    source.close()
-    dataLines
+  "Day 4, Task 1" in {
+    val dataLines = readInput("/input_day4.txt")
+    val response = Day4.task1(dataLines)
+    assert(response == 24848)
+  }
+
+  "Day 4, Task 2" in {
+    val dataLines = readInput("/input_day4.txt")
+    val response = Day4.task2(dataLines)
+    assert(response == 7258152)
+  }
+
+  private def readInput(fileName: String): Seq[String] = {
+    Using(Source.fromURL(getClass.getResource(fileName))) { source =>
+      source.getLines.foldLeft(Seq.empty[String])((acc, x) => acc ++ Seq(x))
+    } match {
+      case Failure(exception) => throw exception
+      case Success(dataLines) => dataLines
+    }
   }
 }
