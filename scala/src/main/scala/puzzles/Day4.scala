@@ -1,12 +1,13 @@
 package puzzles
-case class Card(id: Int, winningNumbers: Seq[Int], ownNumbers: Seq[Int]) {
-  def hits = winningNumbers.intersect(ownNumbers)
-  def points = Math.pow(2, this.hits.size - 1).toInt
-}
-object Day4 {
 
-  private def parseCards(cards: Seq[String]): Seq[Card] = {
-    cards.map {
+case class Card(id: Int, winningNumbers: Seq[Int], ownNumbers: Seq[Int]) {
+  def hits: Seq[Int] = winningNumbers.intersect(ownNumbers)
+  def points: Int = Math.pow(2, this.hits.size - 1).toInt
+}
+
+object Day4 {
+  private def parseCards(rawCards: Seq[String]): Seq[Card] =
+    rawCards.map {
       case s"Card $id: $winning | $own" => Card(
         id = id.strip().toInt,
         winningNumbers = winning.split(" ").filterNot(_.isBlank).map(_.toInt),
@@ -14,21 +15,22 @@ object Day4 {
       )
     }
 
-  }
-  def task1(cards: Seq[String]): Int = parseCards(cards).map(_.points).sum
+  def task1(rawCards: Seq[String]): Int = parseCards(rawCards).map(_.points).sum
 
-  def task2(cards: Seq[String]): Int = {
-    def addCardsWon(currentCards: Map[Int, Int], card: Card): Map[Int, Int] =
-      (card.id + 1 to card.id + card.hits.size).foldLeft(currentCards) {
-        case (currentCards, id) => currentCards.updated(id, currentCards(id) + currentCards(card.id))
+  def task2(rawCards: Seq[String]): Int = {
+    def addCardsWon(cardBalance: Map[Int, Int], winningCard: Card): Map[Int, Int] =
+      (winningCard.id + 1 to winningCard.id + winningCard.hits.size).foldLeft(cardBalance) {
+        case (cardBalance, cardWon) =>
+          val currentBalance = cardBalance(cardWon)
+          val winnings = cardBalance(winningCard.id)
+          cardBalance.updated(cardWon, currentBalance + winnings)
       }
 
-    def getStartingCards(cards: Seq[Card]): Map[Int, Int] =
-      cards.foldLeft(Map.empty[Int, Int]) { case (m, card) => m.updated(card.id, 1) }
+    def getOneOfEach(cards: Seq[Card]): Map[Int, Int] = Map.from(cards.map(c => (c.id, 1)))
 
-    val parsedCards = parseCards(cards)
-    parsedCards.foldLeft(getStartingCards(parsedCards)) {
-      case (m, card) => addCardsWon(m, card)
+    val cards = parseCards(rawCards)
+    cards.foldLeft(getOneOfEach(cards)) {
+      case (cardBalance, card) => addCardsWon(cardBalance, card)
     }.values.sum
   }
 }
