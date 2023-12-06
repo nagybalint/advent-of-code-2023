@@ -1,14 +1,9 @@
 package puzzles
 
 case class Race(time: Long, record: Long) {
-  def score(timePressed: Long) = {
-    val speed = timePressed
-    val goTime = time - timePressed
-    (time - timePressed) * speed
-  }
-  def isWinning(score: Long) = score > record
-  def getWaysToBeatRace: Long = (0L to time).map(timePressed => score(timePressed))
-    .count(score => isWinning(score))
+  def score(timePressed: Long): Long = (time - timePressed) * timePressed
+  def isWinning(score: Long): Boolean = score > record
+  def getWaysToBeatRace: Long = (0L to time).map(timePressed => score(timePressed)).count(score => isWinning(score))
 }
 
 object Day6 {
@@ -23,13 +18,8 @@ object Day6 {
     val record = dataLines(1).split(" ").filterNot(_.isBlank).drop(1).mkString.toLong
     Race(time, record)
   }
-  def task1(dataLines: Seq[String]): Long = {
-    val races = parseRaces(dataLines)
-    races.map(_.getWaysToBeatRace).product
-  }
 
-  def task2(dataLines: Seq[String]): Long = {
-    val race = parseSingleRace(dataLines)
-    race.getWaysToBeatRace
-  }
+  def task1(dataLines: Seq[String]): Long = parseRaces(dataLines).map(_.getWaysToBeatRace).product
+  // Ideally this should be done by calculating the roots of a quadratic function, but as brute force works, ¯\_(ツ)_/¯ 
+  def task2(dataLines: Seq[String]): Long = parseSingleRace(dataLines).getWaysToBeatRace
 }
