@@ -27,7 +27,6 @@ case class CategoryMap(from: String, to: String, ranges: Seq[Range]) {
       .getOrElse(defaultMapping(source))
   }
   private def defaultMapping(source: Long): Long = source
-  // Returns (source ranges mapped, source ranges untouched)
   def applyOnSourceRange(seedRanges: Seq[SourceRange]): Seq[SourceRange] = {
     val (mapped, unmapped) = ranges.foldLeft(Seq.empty[SourceRange], seedRanges) { case ((mapped, unmapped), range) =>
       val maybeMap = unmapped.map(um => range.applyOnSourceRange(um))
