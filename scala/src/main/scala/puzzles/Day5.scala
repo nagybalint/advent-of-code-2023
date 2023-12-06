@@ -9,11 +9,15 @@ case class Almanac(seeds: Seq[Long], categoryMaps: Seq[CategoryMap]) {
   def applyOnSeeds: Seq[Long] = this.seeds.map(seed => this.categoryMaps.foldLeft(seed) {
     case (source, map) => map.applyOnSource(source)
   })
-  def seedRanges: Seq[SeedRange] = seeds.grouped(2).map(seedRange => SeedRange(seedRange.head, seedRange.last)).toSeq
-  def applyOnSeedRanges: Seq[SeedRange] = this.categoryMaps.foldLeft(seedRanges) {
-    case (sourceRanges, map) => map.applyOnSeedRanges(sourceRanges)
+  def seedRanges: Seq[SourceRange] = seeds
+    .grouped(2)
+    .map(seedRange => SourceRange(seedRange.head, seedRange.last))
+    .toSeq
+  def applyOnSeedRanges: Seq[SourceRange] = this.categoryMaps.foldLeft(seedRanges) {
+    case (sourceRanges, map) => map.applyOnSourceRange(sourceRanges)
   }
 }
+
 case class CategoryMap(from: String, to: String, ranges: Seq[Range]) {
   def withNewRange(r: Range): CategoryMap = this.copy(ranges = this.ranges.appended(r))
   def applyOnSource(source: Long): Long = {
@@ -23,48 +27,43 @@ case class CategoryMap(from: String, to: String, ranges: Seq[Range]) {
       .getOrElse(defaultMapping(source))
   }
   private def defaultMapping(source: Long): Long = source
-  // Return (mapped, unmapped)
-  def applyOnSeedRanges(seedRanges: Seq[SeedRange]): Seq[SeedRange] = {
-    val (mapped, unmapped) = ranges.foldLeft(Seq.empty[SeedRange], seedRanges) { case ((mapped, unmapped), r ) =>
-      val maybeMap = unmapped.map(um => r.applyOnRange(um))
+  // Returns (source ranges mapped, source ranges untouched)
+  def applyOnSourceRange(seedRanges: Seq[SourceRange]): Seq[SourceRange] = {
+    val (mapped, unmapped) = ranges.foldLeft(Seq.empty[SourceRange], seedRanges) { case ((mapped, unmapped), range) =>
+      val maybeMap = unmapped.map(um => range.applyOnSourceRange(um))
       val newMapped = maybeMap.map(_._1).filter(_.isDefined).map(_.get)
       val remainsUnmapped = maybeMap.flatMap(_._2)
       (mapped.appendedAll(newMapped), remainsUnmapped)
     }
-    // Optimize here for merging continuous ranges
+    // TODO: Maybe optimize here for merging continuous ranges
     mapped.appendedAll(unmapped)
   }
 }
-case class Range(dStart: Long, sStart: Long, length: Long) {
-  def isForSource(source: Long): Boolean = source >= sStart && source < sStart + length
-  def largestMappedSource: Long = this.sStart + length - 1
-  def applyOnSource(source: Long): Long = dStart + (source - sStart)
-  // Return (seedRange mapped, seedranges untouched)
-  def applyOnRange(seedRange: SeedRange): (Option[SeedRange], Seq[SeedRange]) = {
-    if ((seedRange.start > this.largestMappedSource) || (seedRange.largestSeed < this.sStart))
-      (None, Seq(seedRange))
+
+case class Range(dstStart: Long, srcStart: Long, length: Long) {
+  def isForSource(src: Long): Boolean = src >= this.srcStart && src < this.srcStart + length
+  def srcEnd: Long = this.srcStart + length - 1
+  def applyOnSource(src: Long): Long = dstStart + (src - this.srcStart)
+  // Returns (source range mapped, source ranges untouched)
+  def applyOnSourceRange(sourceRange: SourceRange): (Option[SourceRange], Seq[SourceRange]) = {
+    if ((sourceRange.start > this.srcEnd) || (sourceRange.end < this.srcStart))
+      (None, Seq(sourceRange))
     else {
-      val firstSeedToMap = Math.max(seedRange.start, this.sStart)
-      val lastSeedToMap = Math.min(seedRange.largestSeed, this.largestMappedSource)
-      val firstDest = applyOnSource(firstSeedToMap)
-      val lastDest = applyOnSource(lastSeedToMap)
-      val mappedRange = SeedRange(firstDest, lastDest - firstDest + 1)
-      val unmappedInFront = if (firstSeedToMap > seedRange.start) {
-        Some(SeedRange(seedRange.start, firstSeedToMap - seedRange.start))
-      } else {
-        None
-      }
-      val unmappedInBack = if (lastSeedToMap < seedRange.largestSeed) {
-        Some(SeedRange(lastSeedToMap + 1, seedRange.largestSeed - lastSeedToMap))
-      } else {
-        None
-      }
-      (Some(mappedRange), Seq(unmappedInFront, unmappedInBack).filter(_.isDefined).map(_.get))
+      val firstSourceToMap = Math.max(sourceRange.start, this.srcStart)
+      val lastSourceToMap = Math.min(sourceRange.end, this.srcEnd)
+      val mapped = SourceRange(applyOnSource(firstSourceToMap), lastSourceToMap - firstSourceToMap + 1)
+      val unmapped = Seq(
+        SourceRange(sourceRange.start, firstSourceToMap - sourceRange.start), // invalid if no unmapped in front
+        SourceRange(lastSourceToMap + 1, sourceRange.end - lastSourceToMap)   // invalid if no unmapped in back
+      ).filter(_.isValid)
+      (Some(mapped), unmapped)
     }
   }
 }
-case class SeedRange(start: Long, length: Long) {
-  def largestSeed: Long = start + length - 1
+
+case class SourceRange(start: Long, length: Long) {
+  def end: Long = start + length - 1
+  def isValid: Boolean = length > 0
 }
 
 object Day5 {
@@ -79,9 +78,6 @@ object Day5 {
     }
   }
 
-  def task1(dataLines: Seq[String]): Long =
-    parseAlmanac(dataLines).applyOnSeeds.min
-
-  def task2(dataLines: Seq[String]): Long =
-    parseAlmanac(dataLines).applyOnSeedRanges.map(_.start).min
+  def task1(dataLines: Seq[String]): Long = parseAlmanac(dataLines).applyOnSeeds.min
+  def task2(dataLines: Seq[String]): Long = parseAlmanac(dataLines).applyOnSeedRanges.map(_.start).min
 }
