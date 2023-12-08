@@ -1,6 +1,7 @@
 package puzzles
 
 object Day2 {
+
   private def parseGame(game: String): Seq[Seq[(String, Int)]] =
     game match {
       case s"Game $id: $rounds" => rounds.split("; ").map(cubes => {

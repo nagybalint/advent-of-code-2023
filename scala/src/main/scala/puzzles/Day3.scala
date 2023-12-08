@@ -1,17 +1,18 @@
 package puzzles
 
-case class PartNumber(number: Int, row: Int, leftBound: Int, rightBound: Int) {
-  def isAdjacentTo(x: Int, y: Int): Boolean =
-    (x >= row - 1 && x <= row + 1) && (y <= rightBound + 1 && y >= leftBound - 1)
-}
-case class Symbol(value: String, row: Int, col: Int)
-case class Engine(partNumbers: Seq[PartNumber], symbols: Seq[Symbol])
-
-object Engine {
-  def empty: Engine = Engine(Seq.empty, Seq.empty)
-}
-
 object Day3 {
+
+  case class PartNumber(number: Int, row: Int, leftBound: Int, rightBound: Int) {
+    def isAdjacentTo(x: Int, y: Int): Boolean =
+      (x >= row - 1 && x <= row + 1) && (y <= rightBound + 1 && y >= leftBound - 1)
+  }
+  case class Symbol(value: String, row: Int, col: Int)
+  case class Engine(partNumbers: Seq[PartNumber], symbols: Seq[Symbol])
+
+  object Engine {
+    def empty: Engine = Engine(Seq.empty, Seq.empty)
+  }
+
   private def isPartValid(part: PartNumber, symbolsToCheck: Seq[Symbol]): Boolean =
     symbolsToCheck.exists(symbol => part.isAdjacentTo(symbol.row, symbol.col))
 

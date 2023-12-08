@@ -34,7 +34,7 @@ object Day8 {
     @tailrec
     def _gcd(a: Long, b: Long): Long = if (a == b) a else _gcd(Math.max(a, b) - Math.min(a, b), Math.min(a, b))
     def _lcm(a: Long, b: Long): Long = if (a != 0 || b != 0) a * b / _gcd(a, b) else 0
-    nums.tail.foldLeft(nums.head) { case (agg, n) => _lcm(agg, n)}
+    nums.reduce(_lcm)
   }
 
   def task1(dataLines: Seq[String]): Int = {

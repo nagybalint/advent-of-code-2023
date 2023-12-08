@@ -1,11 +1,12 @@
 package puzzles
 
-case class Card(id: Int, winningNumbers: Seq[Int], ownNumbers: Seq[Int]) {
-  def hits: Seq[Int] = winningNumbers.intersect(ownNumbers)
-  def points: Int = Math.pow(2, this.hits.size - 1).toInt
-}
-
 object Day4 {
+
+  case class Card(id: Int, winningNumbers: Seq[Int], ownNumbers: Seq[Int]) {
+    def hits: Seq[Int] = winningNumbers.intersect(ownNumbers)
+    def points: Int = Math.pow(2, this.hits.size - 1).toInt
+  }
+
   private def parseCards(rawCards: Seq[String]): Seq[Card] =
     rawCards.map {
       case s"Card $id: $winning | $own" => Card(

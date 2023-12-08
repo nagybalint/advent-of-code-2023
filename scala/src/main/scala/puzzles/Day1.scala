@@ -3,7 +3,9 @@ package puzzles
 import scala.util.Try
 
 object Day1 {
+
   val DIGITS = Seq("zero" ,"one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+
   def task1(input: Seq[String]): Int =
     input.map(_.toCharArray.filter(_.isDigit)).map(x => x.take(1).appended(x.last).mkString.toInt).sum
 
