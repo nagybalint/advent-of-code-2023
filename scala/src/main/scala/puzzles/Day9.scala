@@ -3,17 +3,15 @@ package puzzles
 import scala.annotation.tailrec
 
 object Day9 {
-  private def parseTimeSeries(dataLine: String): Seq[Int] = dataLine.split(" ").map(_.strip().toInt)
-
-  def extrapolate(timeSeries: Seq[Int]): Int = {
+  def extrapolate(ts: Seq[Int]): Int = {
     @tailrec
-    def go(timeSeries: Seq[Int], base: Int): Int = {
-      val diffs = timeSeries.sliding(2).map(x => x.last - x.head).toSeq
-      if (diffs.forall(_ == 0)) base else go(diffs, base + diffs.last)
+    def go(ts: Seq[Int], agg: Int): Int = {
+      val diffs = ts.sliding(2).map { case Seq(a, b) => b - a }.toSeq
+      if (diffs.forall(_ == 0)) agg else go(diffs, agg + diffs.last)
     }
-    go(timeSeries, timeSeries.last)
+    go(ts, ts.last)
   }
-
-  def task1(dataLines: Seq[String]): Int = dataLines.map(parseTimeSeries).map(extrapolate).sum
-  def task2(dataLines: Seq[String]): Int = dataLines.map(parseTimeSeries).map(_.reverse).map(extrapolate).sum
+  def parseTimeSeries(in: String): Seq[Int] = in.split(" ").map(_.strip().toInt)
+  def task1(in: Seq[String]): Int = in.map(parseTimeSeries).map(extrapolate).sum
+  def task2(in: Seq[String]): Int = in.map(parseTimeSeries).map(_.reverse).map(extrapolate).sum
 }
