@@ -9,11 +9,7 @@ object Day9 {
     @tailrec
     def go(timeSeries: Seq[Int], base: Int): Int = {
       val diffs = timeSeries.sliding(2).map(x => x.last - x.head).toSeq
-      if (diffs.forall(_ == 0))
-        base
-      else {
-        go(diffs, base + diffs.last)
-      }
+      if (diffs.forall(_ == 0)) base else go(diffs, base + diffs.last)
     }
     go(timeSeries, timeSeries.last)
   }
