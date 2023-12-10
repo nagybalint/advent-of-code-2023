@@ -2,44 +2,44 @@ package puzzles
 
 import scala.annotation.tailrec
 
-case class Coordinate(x: Int, y: Int)
-case class Tile(label: Char, pos: Coordinate) {
-  def allowsNorthStep: Boolean = Seq('S', '|', 'J', 'L').contains(label)
-  def allowsSouthStep: Boolean = Seq('S', '|', '7', 'F').contains(label)
-  def allowsWestStep: Boolean = Seq('S', '-', 'J', '7').contains(label)
-  def allowsEastStep: Boolean = Seq('S', 'F', '-', 'L').contains(label)
+object Day10 {
+  case class Coordinate(x: Int, y: Int)
+  case class Tile(label: Char, pos: Coordinate) {
+    def allowsNorthStep: Boolean = Seq('S', '|', 'J', 'L').contains(label)
+    def allowsSouthStep: Boolean = Seq('S', '|', '7', 'F').contains(label)
+    def allowsWestStep: Boolean = Seq('S', '-', 'J', '7').contains(label)
+    def allowsEastStep: Boolean = Seq('S', 'F', '-', 'L').contains(label)
 
-  def getNorthNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
-    if (pos.x == 0) None else Some(map(pos.x - 1)(pos.y))
-  def getSouthNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
-    if (pos.x == map.size - 1) None else Some(map(pos.x + 1)(pos.y))
-  def getWestNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
-    if (pos.y == 0) None else Some(map(pos.x)(pos.y - 1))
-  def getEastNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
-    if (pos.y == map.head.size - 1) None else Some(map(pos.x)(pos.y + 1))
+    def getNorthNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
+      if (pos.x == 0) None else Some(map(pos.x - 1)(pos.y))
+    def getSouthNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
+      if (pos.x == map.size - 1) None else Some(map(pos.x + 1)(pos.y))
+    def getWestNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
+      if (pos.y == 0) None else Some(map(pos.x)(pos.y - 1))
+    def getEastNeighbor(map: Seq[Seq[Tile]]): Option[Tile] =
+      if (pos.y == map.head.size - 1) None else Some(map(pos.x)(pos.y + 1))
 
-  def getWaysOut(map: Seq[Seq[Tile]]): Seq[Tile] = {
-    val maybeNorth = getNorthNeighbor(map) match {
+    def getWaysOut(map: Seq[Seq[Tile]]): Seq[Tile] = {
+      val maybeNorth = getNorthNeighbor(map) match {
         case Some(n) if n.allowsSouthStep && allowsNorthStep => Some(n)
         case _ => None
       }
-    val maybeSouth = getSouthNeighbor(map) match {
+      val maybeSouth = getSouthNeighbor(map) match {
         case Some(n) if n.allowsNorthStep && allowsSouthStep => Some(n)
         case _ => None
       }
-    val maybeEast = getEastNeighbor(map) match {
+      val maybeEast = getEastNeighbor(map) match {
         case Some(n) if n.allowsWestStep && allowsEastStep => Some(n)
         case _ => None
       }
-    val maybeWest = getWestNeighbor(map) match {
+      val maybeWest = getWestNeighbor(map) match {
         case Some(n) if n.allowsEastStep && allowsWestStep => Some(n)
         case _ => None
       }
-    Seq(maybeNorth, maybeSouth, maybeEast, maybeWest).filter(_.isDefined).map(_.get)
+      Seq(maybeNorth, maybeSouth, maybeEast, maybeWest).filter(_.isDefined).map(_.get)
+    }
   }
-}
 
-object Day10 {
   def parseMap(in: Seq[String]): Seq[Seq[Tile]] = in.zipWithIndex.map {
     case (str, row) => str.toCharArray.toSeq.zipWithIndex.map {
       case (ch, col) => Tile(ch, Coordinate(row, col))
@@ -91,12 +91,28 @@ object Day10 {
           (isInsideLoop, totalEnclosed + enclosedBySegments)
       }._2
 
+  def replaceStart(start: Tile, neighbors: Seq[Tile]): Tile = {
+    neighbors.partition(_.pos.x == start.pos.x) match {
+      case (inline, _) if inline.size == 2 => start.copy(label = '-')
+      case (inline, _) if inline.isEmpty => start.copy(label = '|')
+      case (Seq(inline), Seq(otherLine)) => {
+        if (inline.pos.y < start.pos.y) {
+          if (otherLine.pos.x < start.pos.x) start.copy(label = 'J')
+          else start.copy(label = '7')
+        } else {
+          if (otherLine.pos.x < start.pos.x) start.copy(label = 'L')
+          else start.copy(label = 'F')
+        }
+      }
+    }
+  }
+
   def task2(in: Seq[String]): Int = {
     val map = parseMap(in)
     val startPos = getStartPos(map)
     val steps = findLoop(map, startPos)
     val crossSections = steps
-      .updated(0, steps.head.copy(label = '-')) // This is only valid from my input, replacing "S" with its "effective value"
+      .updated(0, replaceStart(steps.head, Seq(steps(1), steps.last)))
       .groupBy(_.pos.x)
       .values
       .toSeq
