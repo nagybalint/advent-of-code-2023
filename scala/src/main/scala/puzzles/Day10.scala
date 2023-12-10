@@ -41,10 +41,9 @@ object Day10 {
   }
 
   def parseMap(in: Seq[String]): Seq[Seq[Tile]] = in.zipWithIndex.map {
-    case (str, row) => str.toCharArray.toSeq.zipWithIndex.map {
-      case (ch, col) => Tile(ch, Coordinate(row, col))
-    }
+    case (str, row) => str.toCharArray.toSeq.zipWithIndex.map { case (ch, col) => Tile(ch, Coordinate(row, col)) }
   }
+
   def getStartPos(map: Seq[Seq[Tile]]): Tile = map.flatMap(_.find(_.label == 'S')).head
 
   def findLoop(map: Seq[Seq[Tile]], startPos: Tile): Seq[Tile] = {
@@ -60,17 +59,14 @@ object Day10 {
   def task1(in: Seq[String]): Int = {
     val map = parseMap(in)
     val startPos = getStartPos(map)
-    val steps = findLoop(map, startPos)
-    steps.size / 2
+    findLoop(map, startPos).size / 2
   }
 
-  def isUTurn(segment: Seq[Tile]): Boolean = {
-    val firstLabel = segment.head.label
-    val lastLabel = segment.last.label
-    (firstLabel == 'L' && lastLabel == 'J') || (firstLabel == 'F' && lastLabel == '7')
-  }
+  def isUTurn(segment: Seq[Tile]): Boolean =
+    (segment.head.label == 'L' && segment.last.label == 'J') ||
+      (segment.head.label == 'F' && segment.last.label == '7')
 
-  private def splitToSegments(crossSection: Seq[Tile]): Seq[Seq[Tile]] =
+  def splitToSegments(crossSection: Seq[Tile]): Seq[Seq[Tile]] =
     crossSection.sortBy(_.pos.y).filterNot(_.label == '-').foldLeft(Seq.empty[Seq[Tile]]) { case (tileGroups, tile) =>
       if (!tile.allowsWestStep)
         tileGroups.appended(Seq(tile))
@@ -78,48 +74,31 @@ object Day10 {
         tileGroups.dropRight(1).appended(tileGroups.last.appended(tile))
     }
 
-  private def countTilesEnclosedByCrossSection(segments: Seq[Seq[Tile]]): Int =
-    segments
-      .sliding(2)
-      .map(s => (s.head, s.last))
-      .foldLeft(
-        (false, 0)
-      ) {
+  def countTilesEnclosedByCrossSection(crossSection: Seq[Tile]): Int =
+    splitToSegments(crossSection).sliding(2).map(s => (s.head, s.last)).foldLeft((false, 0)) {
         case ((wasInsideLoop, totalEnclosed), (segment1, segment2)) =>
           val isInsideLoop = if (isUTurn(segment1)) wasInsideLoop else !wasInsideLoop
           val enclosedBySegments = if (isInsideLoop) segment2.head.pos.y - segment1.last.pos.y - 1 else 0
           (isInsideLoop, totalEnclosed + enclosedBySegments)
       }._2
 
-  def replaceStart(start: Tile, neighbors: Seq[Tile]): Tile = {
-    neighbors.partition(_.pos.x == start.pos.x) match {
-      case (inline, _) if inline.size == 2 => start.copy(label = '-')
-      case (inline, _) if inline.isEmpty => start.copy(label = '|')
-      case (Seq(inline), Seq(otherLine)) => {
-        if (inline.pos.y < start.pos.y) {
-          if (otherLine.pos.x < start.pos.x) start.copy(label = 'J')
-          else start.copy(label = '7')
-        } else {
-          if (otherLine.pos.x < start.pos.x) start.copy(label = 'L')
-          else start.copy(label = 'F')
-        }
-      }
-    }
-  }
+  def replaceStart(start: Tile, neighbors: Seq[Tile]): Tile =
+    start.copy(label = neighbors.partition(_.pos.x == start.pos.x) match {
+      case (inline, _) if inline.size == 2 => '-'
+      case (inline, _) if inline.isEmpty => '|'
+      case (Seq(inline), Seq(otherLine)) =>
+        if (inline.pos.y < start.pos.y)
+          if (otherLine.pos.x < start.pos.x) 'J' else '7'
+        else
+          if (otherLine.pos.x < start.pos.x) 'L' else 'F'
+    })
 
   def task2(in: Seq[String]): Int = {
     val map = parseMap(in)
     val startPos = getStartPos(map)
     val steps = findLoop(map, startPos)
-    val crossSections = steps
-      .updated(0, replaceStart(steps.head, Seq(steps(1), steps.last)))
-      .groupBy(_.pos.x)
-      .values
-      .toSeq
-      .sortBy(_.head.pos.x)
-    crossSections
-      .map(splitToSegments)
-      .map(countTilesEnclosedByCrossSection)
-      .sum
+    val crossSections = steps.updated(0, replaceStart(steps.head, Seq(steps(1), steps.last)))
+      .groupBy(_.pos.x).values.toSeq.sortBy(_.head.pos.x)
+    crossSections.map(countTilesEnclosedByCrossSection).sum
   }
 }
