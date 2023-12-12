@@ -3,9 +3,9 @@ package puzzles
 object Day12 {
 
   def getValidOptions(springs: Seq[Char], damagedDist: Seq[Int], operationalToBeInserted: Int): Long = {
-    val memo = collection.mutable.Map.empty[(Seq[Char], Seq[Int], Int), Long]
+    val memo = collection.mutable.Map.empty[(Int, Int), Long]
     def go(springs: Seq[Char], damagedDist: Seq[Int], operationalToBeInserted: Int): Long = {
-      val partialResult = memo.get((springs, damagedDist, operationalToBeInserted)) match {
+      val partialResult = memo.get((springs.size, operationalToBeInserted)) match {
         case Some(value) => value
         case None =>
           springs.headOption match {
@@ -32,7 +32,7 @@ object Day12 {
               a + b
           }
       }
-      memo.update((springs, damagedDist, operationalToBeInserted), partialResult)
+      memo.update((springs.size, operationalToBeInserted), partialResult)
       partialResult
     }
 
