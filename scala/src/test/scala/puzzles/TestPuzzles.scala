@@ -150,6 +150,18 @@ class TestPuzzles extends AnyWordSpec {
     assert(response == 204640299929836L)
   }
 
+  "Day 13, Task 1" in {
+    val dataLines = readInput("/input_day13.txt")
+    val response = Day13.task1(dataLines)
+    assert(response == 29165)
+  }
+
+  "Day 13, Task 2" in {
+    val dataLines = readInput("/input_day13.txt")
+    val response = Day13.task2(dataLines)
+    assert(response == 32192)
+  }
+
   private def readInput(fileName: String): Seq[String] = {
     Using(Source.fromURL(getClass.getResource(fileName))) { source =>
       source.getLines.foldLeft(Seq.empty[String])((acc, x) => acc ++ Seq(x))
