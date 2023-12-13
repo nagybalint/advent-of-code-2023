@@ -1,7 +1,11 @@
 package puzzles
 
+import scala.annotation.tailrec
+
 object Day13 {
   type Pattern = List[String]
+  type SmudgePosition = (Int, Int)
+
   def findHorizontalReflectionPoint(pattern: Pattern): Seq[(Int, Int)] = {
     val patternArray = pattern.toArray // For fast indexing
     val m = pattern.zipWithIndex.groupBy(_._1).map { case (k, v) => (k, v.map(_._2)) }
@@ -26,38 +30,39 @@ object Day13 {
     horizontalReflectionPoints.appendedAll(verticalReflectionPoints)
   }
 
+  def toggle(c: Char): Char = if (c == '.') '#' else '.'
+
+  def removeSmudge(pattern: Pattern, smudge: SmudgePosition): Pattern =
+    pattern.updated(smudge._1, pattern(smudge._1).updated(smudge._2, toggle(pattern(smudge._1)(smudge._2))))
+
   def smudgeRemover(pattern: Pattern): Seq[Pattern] = {
-    def findSmudgeForHead(patternWithIds: List[(String, Int)]): Seq[(Int, Int)] = {
-      if (patternWithIds.size < 2) {
-        Seq.empty
-      } else {
-        val (headLine, headRow) = patternWithIds.head
-        val toSmudge = patternWithIds.tail.map(_._1)
-          .flatMap(_.zip(headLine).zipWithIndex.filter {
-            case ((c1, c2), _) => c1 != c2 } map(_._2) match {
-              case diffCharIds if diffCharIds.size == 1 => Seq((headRow, diffCharIds.head))
-              case _ => Seq.empty
-            })
-        toSmudge.appendedAll(findSmudgeForHead(patternWithIds.tail))
+    def findSmudges(patternWithIds: List[(String, Int)]): List[SmudgePosition] = {
+      @tailrec
+      def go(patternWithIds: List[(String, Int)], acc: List[SmudgePosition]): List[SmudgePosition] =
+        patternWithIds match {
+          case Nil => acc
+          case _ :: Nil => acc
+          case (headLine, headRow) :: tail =>
+            go(tail, acc.appendedAll(
+                tail
+                  .map(_._1)
+                  .map(_.zip(headLine).zipWithIndex.filter { case ((c1, c2), _) => c1 != c2 }.map(_._2))
+                  .filter(_.size == 1)
+                  .map(x => (headRow, x.head))
+              ))
         }
+      go(patternWithIds, List.empty)
     }
-    def toggle(c: Char): Char = if (c == '.') '#' else '.'
-    def removeSmudge(smudge: (Int, Int)): Pattern = {
-      pattern.updated(smudge._1, pattern(smudge._1).updated(smudge._2, toggle(pattern(smudge._1)(smudge._2))))
-    }
-    val horizontalSmudges = findSmudgeForHead(pattern.zipWithIndex)
-    val verticalSmudges = findSmudgeForHead(pattern.transpose.map(_.mkString).zipWithIndex).map(_.swap)
+    val horizontalSmudges = findSmudges(pattern.zipWithIndex)
+    val verticalSmudges = findSmudges(pattern.transpose.map(_.mkString).zipWithIndex).map(_.swap)
     val smudges = horizontalSmudges.appendedAll(verticalSmudges).distinct
-    smudges.map(removeSmudge)
+    smudges.map(s => removeSmudge(pattern, s))
   }
 
   def task1(in: Seq[String]): Int = parsePatterns(in).map(p => patternSummaries(p).head).sum
-  def task2(in: Seq[String]): Int = {
-    val aa = parsePatterns(in)
-      .map(pattern => {
-        val originalPatternSummary = patternSummaries(pattern).head
-        smudgeRemover(pattern).map(p => patternSummaries(p).filterNot(_ == originalPatternSummary)).filterNot(_.isEmpty).head
-      })
-  aa.flatten.sum
-  }
+  def task2(in: Seq[String]): Int =
+    parsePatterns(in).flatMap(pattern => {
+      val originalPatternSummary = patternSummaries(pattern).head
+      smudgeRemover(pattern).map(p => patternSummaries(p).filterNot(_ == originalPatternSummary)).filterNot(_.isEmpty).head
+    }).sum
 }
