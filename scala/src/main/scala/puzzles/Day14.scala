@@ -3,61 +3,36 @@ package puzzles
 object Day14 {
   type Platform = List[List[Char]]
 
-  def getLoadOnPlatform(platform: Platform): Int =
-    platform.transpose.map(_.reverse.zipWithIndex.filter(_._1 == 'O').map(_._2 + 1).sum).sum
-
-  def tiltWest(platform: Platform): Platform = {
-    val segmentedPlatform: List[List[List[Char]]] = platform.map(row => {
-      val segmentBounds = row.zipWithIndex.filter(_._1 == '#').map(_._2).prepended(-1).appended(row.length)
-      val segments = segmentBounds.sliding(2).map { case List(a, b) => {
-        if (b - a == 1) List.empty[Char]
-        else row.slice(a + 1 , b)
-      }}.toList
-      segments
-    })
-    segmentedPlatform.map(_.map(_.sorted.reverse.mkString).mkString("#").toCharArray.toList)
-  }
-
-  def tiltEast(platform: Platform): Platform = tiltWest(platform.map(_.reverse)).map(_.reverse)
-  def tiltNorth(platform: Platform): Platform = tiltWest(platform.transpose).transpose
-  def tiltSouth(platform: Platform): Platform = tiltNorth(platform.reverse).reverse
-
-  val m = collection.mutable.HashMap.empty[Platform, Int]
-
-  def spinCycle(platform: Platform): Platform =
-      tiltEast(tiltSouth(tiltWest(tiltNorth(platform))))
-
-  def getFinalState(loopBeganAt: Int, loopRealisedAt: Int, totalSpins: Int): Platform = {
-    val loopLength = loopRealisedAt - loopBeganAt
-    val spinsRemaining = totalSpins - loopRealisedAt
-    val cycleOfLastState = spinsRemaining % loopLength + loopBeganAt
-    val lastState = m.find(_._2 == cycleOfLastState).get._1
-    lastState
-  }
-
-  def spin(platform: List[List[Char]], amt: Int): Platform = {
-    m.addOne(platform, 0)
-    (1 to amt).foldLeft(platform) { case (p, i) =>
-      val spinned = spinCycle(p)
-      m.get(spinned) match {
-        case Some(cycleBeganAt) =>
-          return getFinalState(cycleBeganAt, i, amt)
-        case None =>
-          m.update(spinned, i)
-          spinned
+  def splitRocks(rocks: List[Char]): List[List[Char]] = {
+    @annotation.tailrec
+    def go(rocks: List[Char], currentGroup: List[Char], groups: List[List[Char]]): List[List[Char]] =
+      rocks match {
+        case Nil => groups :+ currentGroup
+        case '#' :: rest => go(rest, Nil, groups :+ currentGroup)
+        case ch :: rest => go(rest, currentGroup :+ ch, groups)
       }
-    }
+    go(rocks, Nil, Nil)
   }
 
-  def task1(in: Seq[String]): Int = {
-    val platform = in.map(_.toCharArray.toList).toList
-    getLoadOnPlatform(tiltNorth(platform))
+  def tiltWest(p: Platform): Platform = p.map(splitRocks(_).map(_.sorted.reverse).reduce(_ :+ '#' :++ _))
+  def tiltEast(p: Platform): Platform = tiltWest(p.map(_.reverse)).map(_.reverse)
+  def tiltNorth(p: Platform): Platform = tiltWest(p.transpose).transpose
+  def tiltSouth(p: Platform): Platform = tiltNorth(p.reverse).reverse
+
+  def spin(platform: Platform, cycles: Int): Platform = {
+    val cache = collection.mutable.HashMap.empty[Platform, Int]
+    @annotation.tailrec
+    def go(platform: Platform, current: Int): Platform =
+      if (current == cycles) platform
+      else cache.put(platform, current) match {
+        case Some(start) => cache.map(_.swap).getOrElse((cycles - current) % (current - start) + start, platform)
+        case None => go(tiltEast(tiltSouth(tiltWest(tiltNorth(platform)))), current + 1)
+      }
+    go(platform, 0)
   }
 
-  def task2(in: Seq[String]): Int = {
-    val platform = in.map(_.toCharArray.toList).toList
-    val spinned = spin(platform, 1000000000)
-    getLoadOnPlatform(spinned)
-  }
-
+  def parsePlatform(in: Seq[String]): Platform = in.map(_.toCharArray.toList).toList
+  def getLoad(p: Platform): Int = p.transpose.map(_.reverse.zipWithIndex.filter(_._1 == 'O').map(_._2 + 1).sum).sum
+  def task1(in: Seq[String]): Int = getLoad(tiltNorth(parsePlatform(in)))
+  def task2(in: Seq[String]): Int = getLoad(spin(parsePlatform(in), 1000000000))
 }
