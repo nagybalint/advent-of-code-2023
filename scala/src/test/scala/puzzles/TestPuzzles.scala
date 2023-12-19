@@ -186,6 +186,18 @@ class TestPuzzles extends AnyWordSpec {
     assert(response == 286097)
   }
 
+  "Day 16, Task 1" in {
+    val dataLines = readInput("/input_day16.txt")
+    val response = Day16.task1(dataLines)
+    assert(response == 8034)
+  }
+
+  "Day 16, Task 2" in {
+    val dataLines = readInput("/input_day16.txt")
+    val response = Day16.task2(dataLines)
+    assert(response == 8225)
+  }
+
   "Day 17, Task 1" in {
     val dataLines = readInput("/input_day17.txt")
     val response = Day17.task1(dataLines)
